@@ -27,6 +27,7 @@ namespace WWActorEdit.Kazari.J3Dx
         FileHeader Header;
         List<FileChunk> Chunks = new List<FileChunk>();
 
+        int NumPackets;
         int NumVertices;
         VertexArrays VtxArrays;
 
@@ -99,8 +100,9 @@ namespace WWActorEdit.Kazari.J3Dx
             ReadDRW1(Chunks.Find(r => r.Tag.Equals("DRW1")));
             ReadJNT1(Chunks.Find(r => r.Tag.Equals("JNT1")));
             ReadSHP1(Chunks.Find(r => r.Tag.Equals("SHP1")));
-            ReadTEX1(Chunks.Find(r => r.Tag.Equals("TEX1")));
             ReadMAT3(Chunks.Find(r => r.Tag.Equals("MAT3")));
+            //ReadMDL3(Chunks.Find(r => r.Tag.Equals("MDL")));
+            ReadTEX1(Chunks.Find(r => r.Tag.Equals("TEX1")));
             ReadANK1(Chunks.Find(r => r.Tag.Equals("ANK1")));
 
             if (VertexFormats != null && SceneGraphRaws != null)
@@ -125,6 +127,7 @@ namespace WWActorEdit.Kazari.J3Dx
         {
             if (INF1Chunk == null) return;
 
+            NumPackets = (int)Helpers.Read32(INF1Chunk.Data, 0x0C);
             NumVertices = (int)Helpers.Read32(INF1Chunk.Data, 0x10);
 
             SceneGraphRaws = new List<SceneGraphRaw>();
@@ -194,15 +197,19 @@ namespace WWActorEdit.Kazari.J3Dx
 
             int JointCount = Helpers.Read16(JNT1Chunk.Data, 0x8);
             UInt32 DataOffset = Helpers.Read32(JNT1Chunk.Data, 0xC);
+            int RemapDataOffset = (int)Helpers.Read32(JNT1Chunk.Data, 0x10);
             int StringTableOffset = (int)Helpers.Read32(JNT1Chunk.Data, 0x14);
 
             int StringCount = Helpers.Read16(JNT1Chunk.Data, StringTableOffset);
 
             for (int i = 0; i < JointCount; i++)
+            {
                 if (StringCount != JointCount)
                     Joints.Add(new Joint(JNT1Chunk.Data, ref DataOffset));
                 else
                     Joints.Add(new Joint(JNT1Chunk.Data, ref DataOffset, StringTableOffset + Helpers.Read16(JNT1Chunk.Data, StringTableOffset + 2 + ((i + 1) * 4))));
+                Joints[i].Remap = (short)Helpers.Read16(JNT1Chunk.Data, RemapDataOffset + (i*2));
+            }
         }
 
         void ReadSHP1(FileChunk SHP1Chunk)
@@ -210,6 +217,13 @@ namespace WWActorEdit.Kazari.J3Dx
             if (SHP1Chunk == null) return;
 
             ShapeData = new Shape(SHP1Chunk.Data);
+        }
+
+        void ReadMAT3(FileChunk MAT3Chunk)
+        {
+            if (MAT3Chunk == null) return;
+
+            MaterialData = new Material(MAT3Chunk.Data);
         }
 
         void ReadTEX1(FileChunk TEX1Chunk)
@@ -239,13 +253,6 @@ namespace WWActorEdit.Kazari.J3Dx
 
                 Textures.Add(NewTex);
             }
-        }
-
-        void ReadMAT3(FileChunk MAT3Chunk)
-        {
-            if (MAT3Chunk == null) return;
-
-            MaterialData = new Material(MAT3Chunk.Data);
         }
 
         void ReadANK1(FileChunk ANK1Chunk)
@@ -1566,6 +1573,7 @@ namespace WWActorEdit.Kazari.J3Dx
             public Matrix4 Matrix = Matrix4.Identity;
 
             public string Name = string.Empty;
+            public Int16 Remap;
 
             public Joint(byte[] Data, ref UInt32 Offset, int StringOffset)
                 : this(Data, ref Offset)
@@ -2382,7 +2390,9 @@ namespace WWActorEdit.Kazari.J3Dx
 
         public enum DataTypes
         {
+            U8 = 0,
             S8 = 1,
+            U16 = 2,
             S16 = 3,
             F32 = 4,
             RGBA8 = 5,

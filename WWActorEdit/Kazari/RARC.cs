@@ -207,7 +207,7 @@ namespace WWActorEdit.Kazari
                     UInt32 ReadOffset = (UInt32)(Header.FileEntriesOffset + (FirstFileEntryOffset * FileEntry.Size) + (i * FileEntry.Size) + 32);
                     FileEntry CurrentFile = new FileEntry(BaseRARC, Data, ReadOffset, Header);
                     Console.WriteLine("Found fileEntry: " + CurrentFile.FileName);
-                    if (CurrentFile.ID == 0xFFFF || CurrentFile.Unknown2 == 0x0200)         // 0x2000 correct???
+                    if (CurrentFile.ID == 0xFFFF || CurrentFile.Unknown == 0x0200)         // 0x2000 correct???
                     {
                         if (CurrentFile.FilenameOffset != 0 && CurrentFile.FilenameOffset != 2)
                             ChildNodes.Add(new FileNode(BaseRARC, Data, CurrentFile.DataOffset, Header));
@@ -230,8 +230,8 @@ namespace WWActorEdit.Kazari
             public RARC BaseRARC;
 
             public UInt16 ID;
-            public UInt16 Unknown1;
-            public UInt16 Unknown2;
+            public UInt16 StringHash;
+            public UInt16 Unknown;
             public UInt16 FilenameOffset;
             public UInt32 DataOffset;
             public UInt32 DataSize;
@@ -248,8 +248,8 @@ namespace WWActorEdit.Kazari
                 BaseRARC = BR;
 
                 ID = Helpers.Read16(Data, (int)Offset);
-                Unknown1 = Helpers.Read16(Data, (int)Offset + 2);
-                Unknown2 = Helpers.Read16(Data, (int)Offset + 4);
+                StringHash = Helpers.Read16(Data, (int)Offset + 2);
+                Unknown = Helpers.Read16(Data, (int)Offset + 4);
                 FilenameOffset = Helpers.Read16(Data, (int)Offset + 6);
                 DataOffset = Helpers.Read32(Data, (int)Offset + 8);
                 DataSize = Helpers.Read32(Data, (int)Offset + 12);
